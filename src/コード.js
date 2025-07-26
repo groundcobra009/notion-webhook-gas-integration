@@ -10,7 +10,9 @@ function onOpen() {
   ui.createMenu('🔧 Notion連携設定')
     .addItem('📝 初期設定', 'showSettingsDialog')
     .addItem('✅ 設定確認', 'checkCurrentSettings')
-    .addItem('🧪 テスト実行', 'testWebhookWithSampleData')
+    .addSeparator()
+    .addItem('🧪 基本テスト実行', 'testWebhookWithSampleData')
+    .addItem('🔄 動的プロパティテスト', 'testDynamicPropertiesWithVariousData')
     .addSeparator()
     .addItem('🔗 Webhook URLを表示', 'showWebhookUrl')
     .addItem('📊 受信ログを確認', 'showRecentLogs')
@@ -317,10 +319,141 @@ function checkCurrentSettings() {
 
 // ===== シート設定 =====
 
-// シートのヘッダーを設定
+// 動的にプロパティからデータを構築
+function buildDynamicData(properties) {
+  const headers = [];
+  const values = [];
+  const types = {};
+  
+  // プロパティマッピング設定を取得
+  const mappingSettings = getPropertyMappingSettings();
+  
+  // プロパティを処理
+  Object.keys(properties).forEach(propertyName => {
+    const property = properties[propertyName];
+    const value = getNotionPropertyValue(property);
+    
+    // 表示名を決定（設定があれば使用、なければプロパティ名をそのまま使用）
+    const displayName = mappingSettings[propertyName] || propertyName;
+    
+    headers.push(displayName);
+    values.push(value);
+    types[displayName] = property.type;
+    
+    console.log(`プロパティ処理: ${propertyName} (${property.type}) -> ${displayName} = ${value}`);
+  });
+  
+  return {
+    headers: headers,
+    values: values,
+    types: types
+  };
+}
+
+// シートのヘッダーを動的に更新
+function updateSheetHeaders(sheet, dynamicHeaders) {
+  const fullHeaders = ['記録日時', ...dynamicHeaders];
+  
+  // 既存のヘッダーを取得
+  const lastCol = sheet.getLastColumn();
+  let existingHeaders = [];
+  if (lastCol > 0) {
+    const existingRange = sheet.getRange(1, 1, 1, lastCol);
+    existingHeaders = existingRange.getValues()[0];
+  }
+  
+  // ヘッダーが変更されている場合のみ更新
+  const headersChanged = !arraysEqual(existingHeaders, fullHeaders);
+  
+  if (headersChanged || existingHeaders.length === 0) {
+    console.log('ヘッダーを更新します:', fullHeaders);
+    
+    // ヘッダー行をクリア
+    if (sheet.getLastColumn() > 0) {
+      sheet.getRange(1, 1, 1, sheet.getLastColumn()).clearContent();
+    }
+    
+    // 新しいヘッダーを設定
+    sheet.getRange(1, 1, 1, fullHeaders.length).setValues([fullHeaders]);
+    
+    // ヘッダーの書式設定
+    const headerRange = sheet.getRange(1, 1, 1, fullHeaders.length);
+    headerRange.setBackground('#1a73e8');
+    headerRange.setFontColor('#ffffff');
+    headerRange.setFontWeight('bold');
+    headerRange.setHorizontalAlignment('center');
+    
+    // 動的な列幅設定
+    setDynamicColumnWidths(sheet, fullHeaders);
+    
+    // シートの保護（ヘッダー行）
+    try {
+      const protection = headerRange.protect().setDescription('ヘッダー行の保護');
+      protection.setWarningOnly(true);
+    } catch (e) {
+      console.log('ヘッダー保護の設定をスキップしました:', e.message);
+    }
+  } else {
+    console.log('ヘッダーに変更がないため、更新をスキップします');
+  }
+}
+
+// 配列の比較
+function arraysEqual(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+// 動的な列幅設定
+function setDynamicColumnWidths(sheet, headers) {
+  headers.forEach((header, index) => {
+    const colIndex = index + 1;
+    
+    // ヘッダー名に基づいて列幅を設定
+    if (header === '記録日時') {
+      sheet.setColumnWidth(colIndex, 150);
+    } else if (header.includes('名') || header.includes('タイトル') || header.includes('説明')) {
+      sheet.setColumnWidth(colIndex, 250);
+    } else if (header.includes('日') || header.includes('期限')) {
+      sheet.setColumnWidth(colIndex, 120);
+    } else if (header.includes('URL') || header.includes('リンク')) {
+      sheet.setColumnWidth(colIndex, 200);
+    } else {
+      sheet.setColumnWidth(colIndex, 120);
+    }
+  });
+}
+
+// プロパティマッピング設定を取得
+function getPropertyMappingSettings() {
+  try {
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const mappingJson = scriptProperties.getProperty('PROPERTY_MAPPING');
+    return mappingJson ? JSON.parse(mappingJson) : {};
+  } catch (e) {
+    console.log('プロパティマッピング設定の取得に失敗:', e.message);
+    return {};
+  }
+}
+
+// プロパティマッピング設定を保存
+function savePropertyMappingSettings(mappingSettings) {
+  try {
+    const scriptProperties = PropertiesService.getScriptProperties();
+    scriptProperties.setProperty('PROPERTY_MAPPING', JSON.stringify(mappingSettings));
+    console.log('プロパティマッピング設定を保存しました:', mappingSettings);
+  } catch (e) {
+    console.error('プロパティマッピング設定の保存に失敗:', e.message);
+    throw e;
+  }
+}
+
+// レガシー関数の互換性維持
 function setupSheetHeaders(sheet) {
-  const headers = [
-    '記録日時',
+  const legacyHeaders = [
     'タスク名',
     '担当者',
     '優先度',
@@ -331,30 +464,7 @@ function setupSheetHeaders(sheet) {
     '説明'
   ];
   
-  // ヘッダー設定
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  
-  // ヘッダーの書式設定
-  const headerRange = sheet.getRange(1, 1, 1, headers.length);
-  headerRange.setBackground('#1a73e8');
-  headerRange.setFontColor('#ffffff');
-  headerRange.setFontWeight('bold');
-  headerRange.setHorizontalAlignment('center');
-  
-  // 列幅の設定
-  sheet.setColumnWidth(1, 150); // 記録日時
-  sheet.setColumnWidth(2, 250); // タスク名
-  sheet.setColumnWidth(3, 120); // 担当者
-  sheet.setColumnWidth(4, 100); // 優先度
-  sheet.setColumnWidth(5, 100); // ステータス
-  sheet.setColumnWidth(6, 120); // 期日
-  sheet.setColumnWidth(7, 100); // 期限超過
-  sheet.setColumnWidth(8, 120); // 工数レベル
-  sheet.setColumnWidth(9, 350); // 説明
-  
-  // シートの保護（ヘッダー行）
-  const protection = headerRange.protect().setDescription('ヘッダー行の保護');
-  protection.setWarningOnly(true);
+  updateSheetHeaders(sheet, legacyHeaders);
 }
 
 // ===== Webhook処理 =====
@@ -447,16 +557,6 @@ function recordToSpreadsheet(data, settings) {
   const spreadsheet = SpreadsheetApp.openById(settings.spreadsheetId);
   let sheet = spreadsheet.getSheetByName(settings.sheetName);
   
-  // シートが存在しない場合は作成
-  if (!sheet) {
-    console.log('シートが存在しないため作成:', settings.sheetName);
-    sheet = spreadsheet.insertSheet(settings.sheetName);
-    setupSheetHeaders(sheet);
-  }
-  
-  // 記録日時
-  const recordDate = new Date();
-  
   // Notionのデータ構造を解析
   let properties = {};
   
@@ -473,36 +573,22 @@ function recordToSpreadsheet(data, settings) {
     properties = {};
   }
   
-  // 各フィールドの値を取得
-  console.log('タスク名を取得中...');
-  const taskName = getNotionPropertyValue(properties['タスク名']) || 
-                   getNotionPropertyValue(properties['title']) || 
-                   '名称未設定';
-  console.log('タスク名:', taskName);
+  // 動的にヘッダーとデータを構築
+  const dynamicData = buildDynamicData(properties);
+  console.log('動的データ構築結果:', dynamicData);
   
-  const assignee = getNotionPropertyValue(properties['担当者']);
-  console.log('担当者:', assignee);
+  // シートが存在しない場合は作成、または既存シートのヘッダーを更新
+  if (!sheet) {
+    console.log('シートが存在しないため作成:', settings.sheetName);
+    sheet = spreadsheet.insertSheet(settings.sheetName);
+  }
   
-  const priority = getNotionPropertyValue(properties['優先度']);
-  const status = getNotionPropertyValue(properties['ステータス']) || 'Complete';
-  const dueDate = getNotionPropertyValue(properties['期日']);
-  const overdue = getNotionPropertyValue(properties['期限超過']);
-  const workLevel = getNotionPropertyValue(properties['工数レベル']);
-  const taskType = getNotionPropertyValue(properties['タスクの種類']);
-  const description = getNotionPropertyValue(properties['説明']);
+  // ヘッダーの更新または作成
+  updateSheetHeaders(sheet, dynamicData.headers);
   
-  // 記録する行データ
-  const rowData = [
-    recordDate,
-    taskName,
-    assignee,
-    priority,
-    status,
-    dueDate,
-    overdue,
-    workLevel || taskType,  // 工数レベルまたはタスクの種類
-    description
-  ];
+  // 記録日時を先頭に追加
+  const recordDate = new Date();
+  const rowData = [recordDate, ...dynamicData.values];
   
   console.log('記録する行データ:', rowData);
   
@@ -516,9 +602,13 @@ function recordToSpreadsheet(data, settings) {
   
   // 日付列のフォーマット
   sheet.getRange(lastRow, 1).setNumberFormat('yyyy/mm/dd hh:mm:ss');
-  if (dueDate) {
-    sheet.getRange(lastRow, 6).setNumberFormat('yyyy/mm/dd');
-  }
+  
+  // 日付プロパティの列にもフォーマットを適用
+  dynamicData.headers.forEach((header, index) => {
+    if (dynamicData.types[header] === 'date' && dynamicData.values[index]) {
+      sheet.getRange(lastRow, index + 2).setNumberFormat('yyyy/mm/dd');
+    }
+  });
   
   console.log('記録完了 - 行番号:', lastRow);
   console.log('--- recordToSpreadsheet終了 ---');
@@ -527,7 +617,9 @@ function recordToSpreadsheet(data, settings) {
     success: true,
     row: lastRow,
     spreadsheet: spreadsheet.getName(),
-    sheet: sheet.getName()
+    sheet: sheet.getName(),
+    headers: ['記録日時', ...dynamicData.headers],
+    detectedProperties: Object.keys(properties)
   };
 }
 
@@ -719,7 +811,9 @@ function testWebhookWithSampleData() {
       '✅ テスト成功',
       'テストデータを記録しました！\n\n' +
       '▫️ 行番号: ' + result.row + '\n' +
-      '▫️ シート: ' + result.sheet + '\n\n' +
+      '▫️ シート: ' + result.sheet + '\n' +
+      '▫️ 検出プロパティ: ' + result.detectedProperties.join(', ') + '\n' +
+      '▫️ ヘッダー: ' + result.headers.join(', ') + '\n\n' +
       'スプレッドシートを確認してください。',
       ui.ButtonSet.OK
     );
@@ -728,6 +822,108 @@ function testWebhookWithSampleData() {
     ui.alert(
       '❌ エラー',
       'テストデータの記録に失敗しました。\n\n' + error.toString(),
+      ui.ButtonSet.OK
+    );
+  }
+}
+
+// 動的プロパティ機能のテスト（異なるプロパティ構成で検証）
+function testDynamicPropertiesWithVariousData() {
+  const ui = SpreadsheetApp.getUi();
+  const settings = getSettings();
+  
+  if (!settings.spreadsheetId) {
+    ui.alert(
+      '⚠️ 設定が必要です',
+      '先に初期設定を行ってください。',
+      ui.ButtonSet.OK
+    );
+    return;
+  }
+  
+  // 様々なプロパティタイプでテスト
+  const testCases = [
+    {
+      name: 'ケース1: 基本プロパティ',
+      data: {
+        'data': {
+          'properties': {
+            'プロジェクト名': {
+              'type': 'title',
+              'title': [{ 'plain_text': 'テストプロジェクト' }]
+            },
+            'URL': {
+              'type': 'url',
+              'url': 'https://example.com'
+            },
+            'チェック': {
+              'type': 'checkbox',
+              'checkbox': true
+            },
+            '数値': {
+              'type': 'number',
+              'number': 100
+            }
+          }
+        }
+      }
+    },
+    {
+      name: 'ケース2: 追加プロパティ',
+      data: {
+        'data': {
+          'properties': {
+            'プロジェクト名': {
+              'type': 'title',
+              'title': [{ 'plain_text': 'テストプロジェクト2' }]
+            },
+            'メール': {
+              'type': 'email',
+              'email': 'test@example.com'
+            },
+            'カテゴリ': {
+              'type': 'multi_select',
+              'multi_select': [
+                { 'name': 'カテゴリA' },
+                { 'name': 'カテゴリB' }
+              ]
+            },
+            '新しいフィールド': {
+              'type': 'rich_text',
+              'rich_text': [{ 'plain_text': '動的に追加されたフィールド' }]
+            }
+          }
+        }
+      }
+    }
+  ];
+  
+  let results = [];
+  
+  try {
+    for (const testCase of testCases) {
+      console.log(`実行中: ${testCase.name}`);
+      const result = recordToSpreadsheet(testCase.data, settings);
+      results.push({
+        name: testCase.name,
+        result: result
+      });
+    }
+    
+    let message = '✅ 動的プロパティテスト成功\n\n';
+    results.forEach(r => {
+      message += `${r.name}:\n`;
+      message += `  行番号: ${r.result.row}\n`;
+      message += `  ヘッダー数: ${r.result.headers.length}\n`;
+      message += `  プロパティ: ${r.result.detectedProperties.join(', ')}\n\n`;
+    });
+    
+    ui.alert('動的プロパティテスト結果', message, ui.ButtonSet.OK);
+    
+  } catch (error) {
+    ui.alert(
+      '❌ エラー',
+      '動的プロパティテストに失敗しました。\n\n' + error.toString(),
       ui.ButtonSet.OK
     );
   }

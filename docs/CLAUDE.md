@@ -6,6 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Google Apps Script (GAS) project that creates a webhook integration between Notion and Google Sheets. The script receives data from Notion automations via webhook and automatically records it in a Google Spreadsheet.
 
+## Project Structure
+
+```
+📦 NotiontoSPオートメーション/
+├── 📄 README.md              # User-friendly setup guide (Japanese)
+├── 📄 appsscript.json         # GAS project configuration
+├── 📂 src/                    # Source code
+│   └── 📄 コード.js          # Main script file
+└── 📂 docs/                   # Documentation
+    └── 📄 CLAUDE.md           # This file
+```
+
 ## Development Commands
 
 ### Google Apps Script Development
@@ -31,29 +43,29 @@ Since this is a GAS project, there are no traditional build/test commands. Devel
 
 ### Main Components
 
-1. **Menu System** (lines 8-18): Custom menu added to Google Sheets for user interaction
+1. **Menu System** (`src/コード.js` lines 8-18): Custom menu added to Google Sheets for user interaction
    - Initial setup dialog
    - Settings verification
    - Test execution
    - Webhook URL display
 
-2. **Settings Management** (lines 227-316): Handles spreadsheet configuration
+2. **Settings Management** (`src/コード.js` lines 227-316): Handles spreadsheet configuration
    - Uses PropertiesService to store spreadsheet ID and sheet name
    - Validates spreadsheet access
    - Auto-creates sheets if needed
 
-3. **Webhook Handler** (`doPost` function, lines 363-439):
+3. **Webhook Handler** (`doPost` function in `src/コード.js` lines 363-439):
    - Entry point for Notion webhooks
    - Parses incoming JSON data
    - Delegates to `recordToSpreadsheet()`
    - Returns JSON response with processing status
 
-4. **Data Processing** (`recordToSpreadsheet`, lines 442-532):
+4. **Data Processing** (`recordToSpreadsheet` in `src/コード.js` lines 442-532):
    - Extracts data from Notion's property structure
    - Maps Notion properties to spreadsheet columns
    - Handles various Notion property types via `getNotionPropertyValue()`
 
-5. **Property Type Handler** (`getNotionPropertyValue`, lines 535-591):
+5. **Property Type Handler** (`getNotionPropertyValue` in `src/コード.js` lines 535-591):
    - Comprehensive handler for all Notion property types
    - Converts Notion data structures to plain text
 
