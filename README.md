@@ -156,27 +156,83 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 📊 Notionのデータベース更新をGoogleスプレッドシートに自動記録するGoogle Apps Script（GAS）スクリプトです。
 
+## 🌟 こんな時に便利です
+
+### 📈 タスク管理の可視化
+- **Notionでタスクを完了** → **自動的にスプレッドシートに記録**
+- 完了タスクの統計分析（担当者別、期間別、優先度別など）
+- チームの生産性をグラフ化して共有
+
+### 📊 レポート作成の自動化
+- **日次・週次・月次のタスク完了レポート**を自動生成
+- Googleスプレッドシートの関数でKPIを自動計算
+- 経営陣向けのダッシュボード作成
+
+### 🔄 他システムとの連携
+- スプレッドシートを経由して**会計システムに工数データを連携**
+- **Slack通知**と組み合わせてタスク完了を即座に共有
+- Power BIやTableauなどのBIツールでデータ分析
+
+### 👥 チーム管理
+- メンバーごとのタスク完了数を可視化
+- 期限超過タスクの自動検出とアラート
+- プロジェクト別の進捗管理
+
+## 💡 具体的な活用例
+
+**例1: フリーランスの案件管理**
+```
+Notion: 案件ステータスを「完了」に変更
+↓
+自動記録: 案件名、金額、工数、完了日
+↓
+スプレッドシート: 月別売上集計、請求書作成
+```
+
+**例2: 開発チームのスプリント管理**
+```
+Notion: タスクを「Done」に移動
+↓
+自動記録: タスク名、担当者、ストーリーポイント、完了時刻
+↓
+スプレッドシート: ベロシティ計算、バーンダウンチャート生成
+```
+
+**例3: カスタマーサポートの対応記録**
+```
+Notion: チケットを「解決済み」に変更
+↓
+自動記録: 問い合わせ内容、対応者、対応時間、カテゴリ
+↓
+スプレッドシート: 対応時間分析、FAQ作成の参考データ
+```
+
 ## 🎯 主な機能
 
 ✅ **動的プロパティ検出**
 - Notionのプロパティ変更に自動対応
 - プロパティの増減・型変更に対応
+- カスタムフィールドも自動で列追加
 
 ✅ **自動ヘッダー生成**
 - スプレッドシートのヘッダーを動的に更新
 - 新しいプロパティを自動的に列として追加
+- 既存データを保持したまま構造変更に対応
 
 ✅ **直感的なメニューインターフェース**
 - スプレッドシート上にメニューを追加
 - 初期設定から動作確認まで簡単操作
+- 技術知識不要で誰でも使える
 
 ✅ **包括的なテスト機能**
 - 基本テストと動的プロパティテスト
 - 本番前の動作確認が可能
+- サンプルデータで安全に検証
 
 ✅ **詳細なロギング**
 - 受信データの記録
 - エラーの追跡が容易
+- トラブルシューティングを簡単に
 
 ## 📋 必要なもの
 
@@ -271,6 +327,59 @@ Notionのバグにより、正しいヘッダー名 `Content-Type` を使用す�
 
 - Content-Typeヘッダーのスペルを確認
 - データが選択されているか確認
+
+## 🚀 さらなる活用アイデア
+
+### 📧 メール通知の追加
+```javascript
+// タスク完了時に管理者にメール通知
+function sendNotification(taskData) {
+  MailApp.sendEmail({
+    to: "manager@example.com",
+    subject: `タスク完了: ${taskData.taskName}`,
+    body: `担当者: ${taskData.assignee}\n完了日時: ${new Date()}`
+  });
+}
+```
+
+### 📊 月次レポートの自動生成
+```javascript
+// 月末に自動でレポートシートを作成
+function createMonthlyReport() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dataSheet = ss.getSheetByName("Notion_タスク記録");
+  const reportSheet = ss.insertSheet(`${new Date().getMonth() + 1}月レポート`);
+  
+  // ピボットテーブルやグラフを自動生成
+  // ...
+}
+```
+
+### 🔗 Slack連携
+```javascript
+// Slackに完了通知を送信
+function postToSlack(taskData) {
+  const webhookUrl = PropertiesService.getScriptProperties().getProperty('SLACK_WEBHOOK');
+  UrlFetchApp.fetch(webhookUrl, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify({
+      text: `✅ タスク完了: ${taskData.taskName} (担当: ${taskData.assignee})`
+    })
+  });
+}
+```
+
+## 🎓 学習リソース
+
+### Notion × GAS 連携を深く理解する
+- [Notion公式: データベースオートメーション](https://www.notion.so/ja/help/database-automations)
+- [GAS公式: Webhookの処理](https://developers.google.com/apps-script/guides/web)
+- [実践的なGAS開発パターン](https://github.com/tanaikech/taking-advantage-of-google-apps-script)
+
+### コミュニティ
+- [Notion日本語コミュニティ](https://www.facebook.com/groups/notion.jp)
+- [GAS活用コミュニティ](https://groups.google.com/g/google-apps-script-community)
 
 ## 📝 詳細なセットアップガイド
 
