@@ -1,127 +1,296 @@
-# 📊 Notion → Google Sheets 自動連携システム
+# Notion Webhook to Google Sheets Integration
 
-NotionのオートメーションからWebhookを受信して、自動的にGoogleスプレッドシートに記録するGoogle Apps Script（GAS）プロジェクトです。
+🔗 Automatically sync Notion database changes to Google Sheets using Webhook and Google Apps Script.
 
-## 🎯 このプロジェクトでできること
+[日本語版はこちら](#日本語)
 
-- Notionのデータベースからタスク情報を自動取得
-- Googleスプレッドシートに自動記録
-- リアルタイムでタスクの完了状況を追跡
-- 複数のタスクプロパティ（優先度、担当者、期日など）に対応
+## ✨ Features
 
-## 📁 プロジェクト構成
+- 🔄 **Dynamic property detection** - Automatically adapts to Notion property changes
+- 📊 **Automatic header generation** - Updates spreadsheet headers dynamically
+- 🚀 **Easy setup with GUI menu** - User-friendly interface in Google Sheets
+- 🧪 **Built-in testing functions** - Test with sample data before going live
+- 📝 **Supports all Notion property types** - Title, select, date, formula, and more
+- 🔍 **Detailed logging** - Easy debugging with comprehensive logs
 
+## 📋 Requirements
+
+- Google account
+- Notion account (Paid plan with automation feature)
+- Google Sheets
+
+## 🚀 Quick Start
+
+### 1. Setup Google Apps Script
+
+1. Open [Google Apps Script](https://script.google.com/)
+2. Create a new project
+3. Copy the content from `src/コード.js` and paste it
+4. Save the project (Ctrl+S)
+
+### 2. Initial Configuration
+
+1. Open your Google Sheets
+2. Reload the page (F5)
+3. You'll see "🔧 Notion連携設定" menu
+4. Click "📝 初期設定" to start setup
+
+### 3. Deploy as Web App
+
+1. In GAS editor: Deploy → New deployment
+2. Type: Web app
+3. Execute as: Me
+4. Who has access: Anyone
+5. Deploy and copy the URL (ending with `/exec`)
+
+### 4. Configure Notion Automation
+
+1. Open your Notion database
+2. Click ⚡ icon → New automation
+3. Trigger: When property "Status" is set to "Complete"
+4. Action: Send webhook
+5. URL: Your GAS deployment URL
+6. Header (optional due to Notion bug):
+   - Key: `ContentType` (no hyphen!)
+   - Value: `application/json`
+
+## 🎮 Usage
+
+### Menu Functions
+
+- **📝 初期設定** - Configure spreadsheet ID and sheet name
+- **✅ 設定確認** - Check current settings
+- **🧪 基本テスト実行** - Test with sample data
+- **🔄 動的プロパティテスト** - Test dynamic property detection
+- **🔗 Webhook URLを表示** - Display deployment URL
+
+### Supported Notion Property Types
+
+| Property Type | Description | Example |
+|---|---|---|
+| title | Page title | Task name |
+| rich_text | Formatted text | Description |
+| select | Single select | Priority |
+| multi_select | Multiple select | Tags |
+| status | Status property | Complete/In Progress |
+| people | Person property | Assignee |
+| date | Date property | Due date |
+| number | Number property | Progress % |
+| checkbox | Checkbox | Is urgent |
+| url | URL property | Link |
+| email | Email property | Contact |
+| phone_number | Phone property | Phone |
+| formula | Formula result | Calculated value |
+
+## ⚠️ Important Notes
+
+### Content-Type Header Issue
+
+Due to a Notion bug (as of July 2025), using the correct header `Content-Type` prevents activation.
+
+**Workarounds:**
+- Use `ContentType` (without hyphen)
+- Or don't set any header
+
+### Webhook URL
+
+- Must end with `/exec` (not `/dev`)
+- Use the production URL from deployment
+
+## 🐛 Troubleshooting
+
+### Data not recording?
+
+1. Check GAS execution logs
+2. Verify spreadsheet ID in settings
+3. Confirm Notion webhook is enabled
+4. Check if all properties are selected in Notion
+
+### "Enable" button not working?
+
+- Check Content-Type spelling
+- Ensure data properties are selected
+
+## 🛠️ Advanced Features
+
+### Dynamic Property Handling
+
+The script automatically handles:
+- New properties added to Notion
+- Properties removed from Notion
+- Property name changes
+- Property type changes
+
+### Custom Property Mapping
+
+You can map Notion property names to custom column headers:
+
+```javascript
+// Example mapping
+{
+  "Task Name": "タスク名",
+  "Assignee": "担当者",
+  "Priority": "優先度"
+}
 ```
-📦 NotiontoSPオートメーション/
-├── 📄 README.md              # このファイル
-├── 📄 appsscript.json         # GASプロジェクト設定
-├── 📂 src/                    # ソースコード
-│   └── 📄 コード.js          # メインスクリプト
-└── 📂 docs/                   # ドキュメント
-    └── 📄 CLAUDE.md           # 開発者向けガイド
-```
 
-## 🚀 セットアップ手順（初心者向け）
+## 📚 Documentation
 
-### ステップ1: Googleスプレッドシートの準備
+- [Notion API Documentation](https://developers.notion.com/)
+- [Google Apps Script Reference](https://developers.google.com/apps-script)
+- [Detailed Setup Guide (Japanese)](note_article.md)
 
-1. [Google Sheets](https://sheets.google.com) を開く
-2. 新しいスプレッドシートを作成
-3. 任意の名前を付ける（例：「Notionタスク管理」）
+## 📄 License
 
-### ステップ2: Google Apps Scriptの設定
+MIT License
 
-1. スプレッドシートで「拡張機能」→「Apps Script」をクリック
-2. 既存のコード（`function myFunction() {}`）を削除
-3. `src/コード.js` の内容をすべてコピー＆ペースト
-4. `appsscript.json` の内容も同様にコピー＆ペースト
-5. 「保存」をクリック（Ctrl+S または ⌘+S）
+## 🤝 Contributing
 
-### ステップ3: 初期設定
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. スプレッドシートに戻る
-2. ページを再読み込み（F5）
-3. 新しく追加された「🔧 Notion連携設定」メニューをクリック
-4. 「📝 初期設定」を選択
-5. 設定画面で以下を入力：
-   - **スプレッドシートID**: 自動入力されます
-   - **シート名**: 「Notion_タスク記録」（推奨）
-6. 「💾 設定を保存」をクリック
+---
 
-### ステップ4: Webアプリとしてデプロイ
+<a id="日本語"></a>
 
-1. Apps Scriptエディタで「デプロイ」→「新しいデプロイ」
-2. 種類で「ウェブアプリ」を選択
-3. 設定：
-   - **実行ユーザー**: 自分
-   - **アクセスできるユーザー**: 全員
-4. 「デプロイ」をクリック
-5. **ウェブアプリのURL**をコピー（重要！）
+# Notion Webhook → Google Sheets 連携
 
-### ステップ5: Notionとの連携設定
+📊 Notionのデータベース更新をGoogleスプレッドシートに自動記録するGoogle Apps Script（GAS）スクリプトです。
 
-1. Notionでタスク管理用のデータベースを開く
-2. 右上の「⋯」メニューから「オートメーション」を選択
-3. 「新しいオートメーション」を作成
-4. トリガー：「タスクが完了したとき」など
-5. アクション：「Webhookを送信する」を選択
-6. URL欄に、ステップ4でコピーしたURLを貼り付け
-7. 送信するプロパティを選択（後述の対応プロパティ参照）
-8. 保存
+## 🎯 主な機能
 
-## 📋 対応するNotionプロパティ
+✅ **動的プロパティ検出**
+- Notionのプロパティ変更に自動対応
+- プロパティの増減・型変更に対応
 
-スクリプトは以下のNotionプロパティに対応しています：
+✅ **自動ヘッダー生成**
+- スプレッドシートのヘッダーを動的に更新
+- 新しいプロパティを自動的に列として追加
 
-| プロパティ名 | タイプ | 説明 |
-|-------------|--------|------|
-| タスク名 | タイトル | タスクのメインタイトル |
-| 担当者 | ユーザー | タスクの担当者 |
-| 優先度 | セレクト | 高・中・低 |
-| ステータス | ステータス | 未着手・進行中・完了など |
-| 期日 | 日付 | タスクの期限 |
-| 期限超過 | 数式 | 期限を過ぎているかの判定 |
-| 工数レベル | セレクト | 作業量の目安 |
-| 説明 | テキスト | タスクの詳細説明 |
+✅ **直感的なメニューインターフェース**
+- スプレッドシート上にメニューを追加
+- 初期設定から動作確認まで簡単操作
 
-## 🧪 動作テスト
+✅ **包括的なテスト機能**
+- 基本テストと動的プロパティテスト
+- 本番前の動作確認が可能
 
-設定完了後、以下の手順でテストできます：
+✅ **詳細なロギング**
+- 受信データの記録
+- エラーの追跡が容易
 
-1. スプレッドシートの「🔧 Notion連携設定」メニュー
-2. 「🧪 テスト実行」を選択
-3. テストデータが正常に記録されることを確認
+## 📋 必要なもの
 
-## ❓ トラブルシューティング
+- Googleアカウント
+- Notionアカウント（オートメーション機能が使える有料プラン）
+- Googleスプレッドシート
 
-### よくある問題と解決方法
+## 🚀 セットアップ手順
 
-**Q: メニューが表示されない**
-- スプレッドシートを再読み込みしてください
-- Apps Scriptの保存を確認してください
+### 1. GASプロジェクトの準備
 
-**Q: データが記録されない**
-- 「✅ 設定確認」でスプレッドシート接続を確認
-- NotionのWebhook URLが正しいか確認
-- Apps Scriptの実行ログを確認（拡張機能 → Apps Script → 実行数）
+1. [Google Apps Script](https://script.google.com/)を開く
+2. 新しいプロジェクトを作成
+3. `src/コード.js`の内容をコピーして貼り付け
 
-**Q: 一部のプロパティが記録されない**
-- Notionのプロパティ名が日本語で正確に設定されているか確認
-- プロパティのタイプが対応しているか確認
+### 2. 初期設定
 
-## 📞 サポート
+1. コードを保存（Ctrl+S）
+2. スプレッドシートを開いてリロード（F5）
+3. メニューに「🔧 Notion連携設定」が表示される
+4. 「📝 初期設定」から設定を開始
 
-- **設定確認**: メニューの「✅ 設定確認」
-- **ログ確認**: メニューの「📊 受信ログを確認」
-- **Webhook URL**: メニューの「🔗 Webhook URLを表示」
+### 3. Webアプリとしてデプロイ
 
-## 📝 更新履歴
+1. GASエディタで「デプロイ」→「新しいデプロイ」
+2. 種類：ウェブアプリ
+3. 実行ユーザー：自分
+4. アクセス：全員
+5. デプロイして表示されるURLをコピー
 
-- **2025/07/27**: プロジェクト初期作成
-  - Notion Webhook受信機能
-  - Google Sheets自動記録機能
-  - 初心者向けセットアップガイド
+### 4. Notion側の設定
+
+1. データベースで「⚡オートメーション」を作成
+2. トリガー：ステータスが「完了」に変更
+3. アクション：Webhookを送信
+4. URL：GASのデプロイURL
+5. ヘッダー（オプション）：
+   - キー：`ContentType`（ハイフンなし）
+   - 値：`application/json`
+
+## 🎮 使い方
+
+### メニュー機能
+
+- **📝 初期設定** - スプレッドシートIDとシート名を設定
+- **✅ 設定確認** - 現在の設定を確認
+- **🧪 基本テスト実行** - サンプルデータで動作確認
+- **🔄 動的プロパティテスト** - 様々なプロパティ構成でテスト
+- **🔗 Webhook URLを表示** - デプロイURLを確認
+
+### 対応しているNotionプロパティタイプ
+
+- ✅ タイトル（title）
+- ✅ リッチテキスト（rich_text）
+- ✅ セレクト（select）
+- ✅ マルチセレクト（multi_select）
+- ✅ ステータス（status）
+- ✅ 人物（people）
+- ✅ 日付（date）
+- ✅ 数値（number）
+- ✅ チェックボックス（checkbox）
+- ✅ URL
+- ✅ メール（email）
+- ✅ 電話番号（phone_number）
+- ✅ 数式（formula）
+
+## ⚠️ 注意事項
+
+### Content-Typeヘッダーについて
+
+Notionのバグにより、正しいヘッダー名 `Content-Type` を使用すると有効化できない問題があります。
+
+**回避方法：**
+- `ContentType`（ハイフンなし）を使用
+- またはヘッダーを設定しない
+
+### Webhook URLについて
+
+- URLは必ず `/exec` で終わる形式を使用
+- `/dev` で終わるURLは開発用で本番では使用不可
+
+## 🐛 トラブルシューティング
+
+### データが記録されない場合
+
+1. GASエディタで「実行数」を確認
+2. エラーログをチェック
+3. スプレッドシートIDが正しいか確認
+4. Notion側でWebhookが有効になっているか確認
+
+### 「有効化」ボタンが押せない
+
+- Content-Typeヘッダーのスペルを確認
+- データが選択されているか確認
+
+## 📝 詳細なセットアップガイド
+
+より詳しい説明は[note記事](note_article.md)を参照してください。
+
+## 📚 参考資料
+
+- [Notion API Documentation](https://developers.notion.com/)
+- [Google Apps Script Reference](https://developers.google.com/apps-script)
+
+## 📄 ライセンス
+
+MIT License
+
+## 🤝 貢献
+
+プルリクエストを歓迎します！お気軽にご提案ください。
 
 ---
 
 💡 **ヒント**: 初回設定で不明な点があれば、各メニューの「設定確認」や「テスト実行」を活用してください！
+
+*Last updated: 2025/07/27*
